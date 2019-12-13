@@ -9,18 +9,22 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
 public class SampleSocketServer{
+	static String encryptedString;
+    static String decryptedString;
 	int port = -1;
+	static int clientId = 0;
 	//private Thread clientListenThread = null;
 	List<ServerThread> clients = new ArrayList<ServerThread>();
-	static String encryptedString;
-	static String decryptedString;
+	HashMap<String, String[]> moves = new HashMap<String,String[]>();
 	public static boolean isRunning = true;
 	public SampleSocketServer() {
 		isRunning = true;
@@ -29,13 +33,20 @@ public class SampleSocketServer{
 	 * Send the same payload to all connected clients.
 	 * @param payload
 	 */
-	public synchronized void broadcast(Payload payload) {
+	public synchronized void broadcast(Payload payload, String except) {
 		//iterate through all clients and attempt to send the message to each
 		System.out.println("Sending message to " + clients.size() + " clients");
 		//TODO ensure closed clients are removed from the list
 		for(int i = 0; i < clients.size(); i++) {
+			if(except != null && clients.get(i).getClientName().equals(except)) {
+				continue;
+			}
+		
 			clients.get(i).send(payload);
 		}
+	}
+	public synchronized void broadcast(Payload payload) {
+		broadcast(payload, null);
 	}
 	public void removeClient(ServerThread client) {
 		Iterator<ServerThread> it = clients.iterator();
@@ -50,12 +61,12 @@ public class SampleSocketServer{
 	}
 	void cleanupClients() {
 		if(clients.size() == 0) {
-			//we don't need to loop or spam if we don't have clients
+			//we don't need to iterate or spam if we don't have clients
 			return;
 		}
 		//use an iterator here so we can remove elements mid loop/iteration
 		Iterator<ServerThread> it = clients.iterator();
-		System.out.println("Start Cleanup count " + clients.size());
+		int start = clients.size();
 		while(it.hasNext()) {
 			ServerThread s = it.next();
 			if(s.isClosed()) {
@@ -66,7 +77,10 @@ public class SampleSocketServer{
 				it.remove();
 			}
 		}
-		System.out.println("End Cleanup count " + clients.size());
+		int diff = start - clients.size();
+		if(diff != 0) {
+			System.out.println("Cleaned up " + diff + " clients");
+		}
 	}
 	/***
 	 * Send a payload to a client based on index (basically in order of connection)
@@ -119,19 +133,12 @@ public class SampleSocketServer{
 				try {
 					Socket client = serverSocket.accept();
 					System.out.println("Client connected");
-					
-					
 					ServerThread thread = new ServerThread(client, 
-							"Client[" + clients.size() + "]",
+							"id_" + clientId,
 							this);
 					thread.start();//start client thread
 					clients.add(thread);//add to client pool
-					
-					
-                    
-					
-					
-					
+					clientId++;
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -149,6 +156,18 @@ public class SampleSocketServer{
 			}
 		}
 	}
+	
+	
+	
+	public void HandleText(String clientName, String text) {
+		
+		
+		
+		System.out.println("Handling text " + text + " from " + clientName);
+		
+		
+	}
+		
 	
 	private static SecretKeySpec secretKey;
     private static byte[] key;
@@ -181,6 +200,7 @@ public class SampleSocketServer{
     {
         try
         {
+        	
             setKey(secret);
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
