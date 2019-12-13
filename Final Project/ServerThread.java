@@ -10,6 +10,7 @@ public class ServerThread extends Thread{
 	private Socket client;//server's reference to the connect client
 	private String clientName;//this connected client's name
 	private String key;
+	MyUI ui;
 	//Object streams that let us pass objects
 	private ObjectInputStream in;//from client
 	private ObjectOutputStream out;//to client
@@ -23,16 +24,21 @@ public class ServerThread extends Thread{
 		out = new ObjectOutputStream(client.getOutputStream());
 		in = new ObjectInputStream(client.getInputStream());
 		System.out.println("Spawned thread for client " + clientName);
+		//broadcast connect to other players
+		server.broadcast(new Payload(PayloadType.CONNECT, clientName), clientName);
+		
 	}
 	@Override
 	public void run() {
 		try{
 			Payload fromClient;
-			//if disconnected in.readObject will throw an EOFException
+			//if disconnected, in.readObject will throw an EOFException
 			while(isRunning 
 					&& !client.isClosed() 
 					&& (fromClient = (Payload)in.readObject()) != null) {
+				//received a payload, handle it
 				processPayload(fromClient);
+				
 			}
 		}
 		catch(Exception e) {
@@ -50,32 +56,32 @@ public class ServerThread extends Thread{
 	}
 	void processPayload(Payload payload) {
 		System.out.println("Received: " + payload);
-		//TODO handle payload types
 		switch(payload.payloadType) {
 			case MESSAGE:
-				String secretkey = payload.toString();
-				String encryptedString = SampleSocketServer.encrypt(payload.message, secretkey);
-				Payload toClient = new Payload(PayloadType.MESSAGE,clientName + ": " + encryptedString);
-				System.out.println("Sending: " + toClient.toString());
-				server.broadcast(toClient);
+                final String secretkey = "passwordpassword";
+                String encryptedString = SampleSocketServer.encrypt(payload.message, secretkey);
+                Payload toClient = new Payload(PayloadType.MESSAGE,clientName + ": " + encryptedString);
+                System.out.println("Sending: " + toClient.toString());
+                server.broadcast(toClient);
+                
+			break;
+			
+			case TEXT:
+				server.HandleText(clientName, payload.message);
 				break;
+			
 			case DISCONNECT:
 				System.out.println("Removing client " + clientName);
 				server.removeClient(this);
+				server.broadcast(new Payload(PayloadType.DISCONNECT,""));
 				stopThread();
 				break;
-			case KEY:
-				
-				key = payload.message;
-				
-				break;
-			case DECRYPT:
-				String secret = payload.toString();
-				String decryptedString = SampleSocketServer.decrypt(encryptedString, secret);
 			default:
 				break;
 		}
 	}
+
+	
 	public void stopThread() {
 		isRunning = false;
 	}
