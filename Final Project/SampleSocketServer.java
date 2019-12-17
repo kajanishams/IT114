@@ -20,6 +20,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class SampleSocketServer{
 	static String encryptedString;
     static String decryptedString;
+    //final String secretkey = "passwordpassword";
 	int port = -1;
 	static int clientId = 0;
 	//private Thread clientListenThread = null;
@@ -41,8 +42,9 @@ public class SampleSocketServer{
 			if(except != null && clients.get(i).getClientName().equals(except)) {
 				continue;
 			}
-		
-			clients.get(i).send(payload);
+			Payload p2 = new Payload(payload.payloadType,decrypt(payload.message,clients.get(i).decryptionkey));
+			
+			clients.get(i).send(p2);
 		}
 	}
 	public synchronized void broadcast(Payload payload) {
@@ -221,13 +223,17 @@ public class SampleSocketServer{
             setKey(secret);
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
+     
+            System.out.println(strToDecrypt);
             return new String(cipher.doFinal(Base64.getDecoder().decode(strToDecrypt)));
+            
         }
         catch (Exception e)
         {
             System.out.println("Error while decrypting: " + e.toString());
+            e.printStackTrace();
         }
-        return null;
+        return "{Message error: not decrypted}";
     }
    
 	
