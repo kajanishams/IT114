@@ -59,7 +59,7 @@ public class SampleSocketClient {
 				@Override
 				public void run() {
 					try {
-						
+						/*
 						keycheck = "";
 						System.out.println("Enter encryption key: ");
 						keycheck = si.nextLine();	
@@ -75,7 +75,7 @@ public class SampleSocketClient {
 						
 						while (!server.isClosed()) 
 						{
-							
+						
 							String toServer ="";
 							toServer = si.nextLine();
 							
@@ -88,7 +88,7 @@ public class SampleSocketClient {
 	                                
 	                               
 							 }
-						
+						*/
 						Payload fromServer;
 						
 						//while we're connected, listen for payloads from server
@@ -97,12 +97,12 @@ public class SampleSocketClient {
 							
 							
 							processPayload(fromServer);
-							processFromServer(fromServer);
+							
 							
 						}
 						
 				
-						}
+						
 						
 						System.out.println("Stopping server listen thread");
 					}
@@ -144,7 +144,9 @@ public class SampleSocketClient {
 	 * @param p
 	 * 
 	 */
+	
 	void processPayload(Payload p) throws IOException {
+		System.out.println("Received: " + p.message);
 		switch(p.payloadType) {
 			case CONNECT:
 				System.out.println("A client connected");
@@ -156,7 +158,7 @@ public class SampleSocketClient {
 				break;
 			case MESSAGE:
 				
-				System.out.println();
+				System.out.println(p.message);
 				
 				messages.add(p.message);
 
@@ -176,8 +178,19 @@ public class SampleSocketClient {
 	}
 
 	
+	public void sendKeys(String enc, String dec) {
+		try {
+			out.writeObject(new Payload(PayloadType.CONNECT, enc + ":" + dec));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	private static SecretKeySpec secretKey;
     private static byte[] key;
+    
+    
     
 	 public static void setKey(String myKey)
 	    {
@@ -199,23 +212,7 @@ public class SampleSocketClient {
 	    }
 	 
 	
-	void processFromServer(Payload p) {
-	final String secretKey = "passwordpassword";
-		String[] m = p.message.split(":");
-		String msg = m[1].trim();
-		String end =decrypt(msg, secretKey);
-		if(end != null && dkey.equals(keycheck)) {
-			
-			
-			System.out.println(end);
-			messages.add(end);
-		}
-		else {
-			
-			System.out.println(msg);
-		}
-				
-	}
+	
 	public static String decrypt(String strToDecrypt, String secret)
     {
         try
