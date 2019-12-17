@@ -233,7 +233,7 @@ public class SampleSocketServer{
             System.out.println("Error while decrypting: " + e.toString());
             e.printStackTrace();
         }
-        return "{Message error: not decrypted}";
+        return "{Decryption error!}";
     }
    
 	
