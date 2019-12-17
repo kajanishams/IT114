@@ -20,6 +20,7 @@ import javax.swing.JTextField;
 
 public class MyUI {
 	
+	ServerThread sv;
 	public static boolean isRunning = true;
 	public static void main(String[] args) {
 		
@@ -30,7 +31,7 @@ public class MyUI {
 		frame.setLayout(new BorderLayout());
 		//create panel
 		JPanel rps = new JPanel();
-		rps.setPreferredSize(new Dimension(700,700));
+		rps.setPreferredSize(new Dimension(300,300));
 		rps.setLayout(new BorderLayout());
 		//create text area for messages
 		JTextArea textArea = new JTextArea();
@@ -82,6 +83,7 @@ public class MyUI {
 			}
 			
 		};
+		
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		JPanel connectionPanel = new JPanel();
 		JTextField hostTextField = new JTextField();
@@ -89,7 +91,16 @@ public class MyUI {
 		JTextField portTextField = new JTextField();
 		portTextField.setText("3000");
 		
-     
+		
+		JLabel ekeylabel = new JLabel("Enter encryption key: ");
+		JTextField ekeyfield = new JTextField();
+		ekeyfield.setPreferredSize(new Dimension(100,30));
+		
+		JLabel dkeylabel = new JLabel("Enter decryption key: ");
+		JTextField dkeyfield = new JTextField();
+		dkeyfield.setPreferredSize(new Dimension(100,30));
+		
+		
 		
 		JTextField errorTextField = new JTextField();
 		errorTextField.setText("");
@@ -113,6 +124,22 @@ public class MyUI {
 		        	connectionPanel.setVisible(false);
 		        	clientMessageReader.start();
 		        	System.out.println("Connected");
+		        	Thread thread = new Thread() {
+		        		@Override
+		        		public void run() {
+		        			try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+		        			
+		        			interaction.sendKeys(ekeyfield.getText(), dkeyfield.getText());
+		        		}
+		        	};
+		        	
+		        	thread.start();
+		        	
 		        }
 		        catch(Exception ex) {
 		        	ex.printStackTrace();
@@ -124,8 +151,14 @@ public class MyUI {
 		
 		connectionPanel.add(hostTextField);
 		connectionPanel.add(portTextField);
-		connectionPanel.add(connect);
+		
 		connectionPanel.add(errorTextField);
+		connectionPanel.add(ekeylabel);
+		connectionPanel.add(ekeyfield);
+		connectionPanel.add(dkeylabel);
+		connectionPanel.add(dkeyfield);
+		
+		connectionPanel.add(connect);
 		
 		
 		frame.addWindowListener(new WindowAdapter() {
@@ -139,13 +172,6 @@ public class MyUI {
 				JTextField textField = new JTextField();
 				textField.setPreferredSize(new Dimension(190,30));
 				
-				JLabel keylabel = new JLabel("Enter key: ");
-				JTextField keyfield = new JTextField();
-				keyfield.setPreferredSize(new Dimension(100,30));
-				
-				JButton k = new JButton();
-				k.setPreferredSize(new Dimension(100,30));
-				k.setText("Enter");
 				
 				//setup submit button
 			
@@ -164,7 +190,8 @@ public class MyUI {
 								
 								interaction.sendText(message);
 								String m = interaction.getMessage();
-								textArea.append("\n ->" + m);
+								textField.setText("");
+								//textArea.append("\n ->" + m);
 								
 								
 								/*
@@ -178,25 +205,12 @@ public class MyUI {
 						}
 				
 				});
-			k.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					String clientkey = "password";
-					String checkkey = keyfield.getText();
-					if(checkkey.contentEquals(clientkey)) {
-						textArea.append("\n Sucessful");
-						
-					}
-					}
-					
-				});
+			
 		
 		
 		userInput.add(textField);
 		userInput.add(b);
-		userInput.add(keylabel);
-		userInput.add(keyfield);// encryption key field
-		userInput.add(k);
+		
 		
 		//add panel to rps panel
 		rps.add(userInput, BorderLayout.SOUTH);
@@ -212,6 +226,11 @@ public class MyUI {
 class Interaction {
 	SampleSocketClient client;
 	public Interaction() {
+		
+	}
+	
+	public void sendKeys (String enc, String dec){
+		client.sendKeys(enc, dec); //call from UI 
 		
 	}
 	public void connect(String host, int port, JTextField errorField) throws IOException{
@@ -242,7 +261,7 @@ class Interaction {
 	public void sendText(String text) {
 		
 		client.sendText(text);
-		
+		client.messages.add(text);
 		
 	}
 	
@@ -253,7 +272,8 @@ class Interaction {
 		return client.isStillConnected();
 	}
 	public String getMessage() {
-		if(client.messages == null) {
+		
+		if( client==null || client.messages == null) {
 			return null;
 		} 
 		else {
